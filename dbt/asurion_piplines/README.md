@@ -1,4 +1,4 @@
-Welcome to your new dbt project!
+# Asurion dbt models
 
 ### Using the starter project
 
