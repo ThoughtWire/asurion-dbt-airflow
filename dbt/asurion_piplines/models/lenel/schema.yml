@@ -1,0 +1,137 @@
+version: 2
+
+sources:
+  - name: raw_data_prod
+    database: phub  
+    schema: public
+    tables:
+      - name: audit
+        description: table that holds raw data in the format of jsonb
+        loaded_at_field: timestamp
+        freshness: 
+          warn_after:
+            count: 1
+            period: day
+          error_after:
+            count: 2
+            period: day
+        columns:
+          - name: payload
+            description: raw data
+            tests:
+              - not_null
+
+      - name: metric
+        description: table that holds system data
+        loaded_at_field: timestamp
+
+      - name: dti_a0
+        description: table that holds information about rooms features and their team allocation.
+
+      - name: dti_n0
+        description: table that holds daily information about Asurion teams and desk assignment at Asurion NGHB.
+        columns:
+          - name: EMPID
+            tests:
+              - unique
+
+      - name: dti_headcount
+        description: table that holds historical information about Asurion teams and desk assignment at Asurion NGHB. 
+        loaded_at_field: archdate
+
+      - name: dti_zl
+        description: lenel system devices 
+
+      - name: insights_entries
+        description: entries data into the gulch hub
+        loaded_at_field: "eventTime"
+        freshness: 
+          warn_after:
+            count: 1
+            period: day
+          error_after:
+            count: 2
+            period: day
+        columns:
+          - name: eventTime
+            quote: true
+      - name: insights_entries_agg
+        description: aggeregated entries data that removed duplicates in insights_entries
+        loaded_at_field: "eventTime"
+        freshness: 
+          warn_after:
+            count: 1
+            period: day
+          error_after:
+            count: 2
+            period: day
+
+  - name: raw_data_uat
+    database: phub
+    schema: public
+    tables:
+      - name: reservation_history
+        description: table for getting historical reservation data from msgraph system at NGHB
+        loaded_at_field: start_time
+        columns:
+          - name: id
+            tests:
+              - unique
+      - name: cluster_alert_history
+        description: table for getting all historical system alerts for Asurion NGHB
+      
+      - name: alert_priority_message
+        description: tables that holds various priority messages for system alerts
+
+      - name: alert_category
+        description: table that holds categories of alerts
+
+      - name: enum_alert_priority
+        description: tables that holds mapping between alerts and priority ids
+
+models:
+  - name: insights_chargepoint
+    description: Table for chargepoint data
+    quote: true
+    config:
+      materialized: incremental
+      indexes:
+        - columns: ['"StartTimeCST"']
+          type: "btree"
+
+  - name: insights_chargepoint_status
+    description: Table for status of chargepoint ports
+    quote: true
+    config:
+      materialized: incremental
+      indexes:
+        - columns: ['"timestampCST"']
+          type: "btree"
+
+  - name: insights_indect
+    description: Table for indect data
+    quote: true
+    config:
+      materialized: incremental
+      indexes:
+        - columns: ["timestamp"]
+          type: "btree"
+
+  - name: insights_splan
+    description: Table for splan data
+    quote: true
+    config:
+      materialized: incremental
+      indexes:
+        - columns: ['"MeetingStartDateTimeCST"']
+          type: "btree"
+
+  - name: insights_lutron
+    description: table tha holds transformed data from lighting lutron system
+    config: 
+      materialized: incremental
+      indexes:
+        - columns: timestamp
+          type: 'btree' 
+
+
