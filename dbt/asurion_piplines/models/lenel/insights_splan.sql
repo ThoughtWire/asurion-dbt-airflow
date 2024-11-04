@@ -1,6 +1,7 @@
 {{ config(
     materialized = 'incremental',
     sort = 'timestamp',
+    unique_key = '"registrationNumber"',
     incremental_strategy = 'delete+insert', 
     tags = ['splan']
 ) }} 
@@ -24,9 +25,9 @@ with parsed_data as (
         where
             subsystem = 'visitorAudit' 
             
-            {% if is_incremental() %}public.add_compress_chunks_policy
+            {% if is_incremental() %}
 
-            and timestamp > max_time 
+            and timestamp > {{max_time}}::timestamp - interval '2 months'
             
             {% endif %}
     ),

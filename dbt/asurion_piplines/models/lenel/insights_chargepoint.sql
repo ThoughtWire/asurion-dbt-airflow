@@ -1,4 +1,7 @@
-{{ config(materialized = 'incremental') }}
+{{ config(materialized = 'incremental', 
+    unique_key = ['"sessionID"'],
+    incremental_strategy = 'delete+insert', 
+    tags =['chargepoint']) }}
 
 {% if is_incremental() %}
 
@@ -14,7 +17,7 @@ where subsystem = 'EVChargingSessionsAudit'
 
 {% if is_incremental() %}
 
-and timestamp > ({{max_time}})
+and timestamp > {{max_time}}::timestamp - interval '2 months'
 
 {% endif %}
 
@@ -49,7 +52,7 @@ parsed_data as (
     dense_rank() over (order by date_part('year', "startTime") desc) as year_order
     
     from duplicates_removed
-    where rn = 1
+    where rn = 1 and "stationID"!='1:11979541'
   
 ),
 

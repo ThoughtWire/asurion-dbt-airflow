@@ -1,27 +1,18 @@
 {{
-    config(materialized = 'materialized_view')
+    config(materialized = 'materialized_view', 
+    tags = ['deliveries'])
 }}
 
 
 WITH parsed_data AS (
 
-            select
-            timestamp at time zone 'America/Chicago' as timestamp,
-            (
-                jsonb_populate_recordset(null :: deliveries, payload :: jsonb)
-            ).*
-        from
-            {{ source('raw_data_prod', 'audit') }}
-        where
-            subsystem = 'deliveriesPickedUp' 
-            
-            {% if is_incremental() %}
+    select
+        timestamp at time zone 'America/Chicago' as timestamp,
+        carrier, "lockerId", "deliveryId", "lockerSize", "timeOfPickUp",
+        "timeOfDelivery", "trackingNumber1", "confirmationCode"
+        from {{source('raw_data_prod', 'insights_pickedup')}}
 
-            and timestamp > max_time 
-            
-            {% endif %}
-
-), 
+            ), 
 
 duplicates_removed as (
 

@@ -45,6 +45,8 @@ historical_reservations as (
         r.start_time,
         r.end_time,
         r.status,
+        r.recurring_id,
+        r.external_id,
         eb.details,
         ea.timestamp,
         ea.cnt

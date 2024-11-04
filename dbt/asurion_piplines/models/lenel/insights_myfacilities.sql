@@ -22,8 +22,7 @@ WITH parsed_data AS (
             
 grouped_data as (
 
-	select *, row_number() over (partition by "REQNO", "PROBLEM", "ACTIVITY", "BLDGCODE", 
-								"CATEGORY", "PRIORITY", "REQFORID" order by timestamp desc ) as row_num
+	select *, row_number() over (partition by "REQNO", "REQFORID", "ROOMFOR" order by timestamp desc ) as row_num
 								
 	from parsed_data
 	where "PROBLEM" ~ ('(.*test test test.*) | (.*disregard.*) | (.*ignore.*) | (.*#test#.*)') or 

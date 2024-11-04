@@ -10,9 +10,19 @@ with history as (
         bldgcode, 
         archdate ,
         to_char(archdate, 'YYYY-MM') as month_year,
-        trim(split_part("rmid", '    ', 2)) as "Room Name",
-        trim(split_part("rmid", '    ', 1)) as "Building Name",
-        split_part(trim(split_part("rmid", '    ', 2)), '.', 1) as "Floor"
+
+        CASE 
+          WHEN bldgcode='NGHB' THEN coalesce(trim(substring(rmid from '[SNP]\d.*')), 'Unassigned')
+          ELSE  coalesce(trim(split_part("rmid", '    ', 2)), 'Unassigned')
+        END as "Room Name",
+
+        coalesce(trim(split_part("rmid", '    ', 1)), 'Unassigned') as "Building Name",
+
+        CASE 
+          WHEN bldgcode='NGHB' THEN coalesce(substring(trim(substring(rmid from '[SNP]\d.*')) from '[SNP]\d{1}(?=(\.|-))'), 'Unassigned')
+          ELSE  split_part(trim(split_part("rmid", '    ', 2)), '.', 1)
+        END as "Floor"
+
     from
        {{ source('raw_data_prod', 'dti_headcount') }}
 

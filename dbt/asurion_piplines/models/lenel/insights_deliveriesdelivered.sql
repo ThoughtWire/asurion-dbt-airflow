@@ -1,7 +1,6 @@
 {{ config(
     materialized = 'materialized_view',
-    indexes = [{'columns':['timestamp'],
-    'type' :'btree' }]
+    tags = ['deliveries']
 ) }} 
 
 
@@ -10,13 +9,9 @@
 WITH parsed_data AS (
     select
         timestamp at time zone 'America/Chicago' as timestamp,
-        (
-            jsonb_populate_recordset(null :: deliveries, payload :: jsonb)
-        ).*
-    from
-         {{ source('raw_data_prod', 'audit') }}
-    where
-        subsystem = 'deliveriesDelivered'
+        carrier, "lockerId", "deliveryId", "lockerSize", "timeOfPickUp",
+        "timeOfDelivery", "trackingNumber1", "confirmationCode"
+        from insights_delivered
 ),
 
 

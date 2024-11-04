@@ -2,20 +2,12 @@
 
 
 
-with buildings as (
-    select
-        zone_id, 
-        case 
-            when zone_name = 'North Building' then 'North'
-            when zone_name = 'South Building' then 'South'
-            else zone_name
-        end as zone_name, zone_position, zone_type
-    from
-        zone
-    where
-        zone_type = 109
-)
-select
-    *
-from
-    buildings
+with zones as (
+select zone_id, max(case when zone_type = 105 then right(zone_name,1) end) floor, 
+max(case when zone_type = 103 or zone_type = 108 or zone_type = 102 then zone_name end) name_, 
+max(case when zone_type = 101 then zone_name end) building
+
+from zone
+group by zone_id)
+
+select * from zones 

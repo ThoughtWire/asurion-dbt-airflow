@@ -3,7 +3,8 @@
 
 with desks as (
 
-select * from {{ ref('pb_n0') }}
+select empid, group_manager, entrprs_hc, rmid, bldgcode, archdate, month_year, 
+"Room Name", "Building Name", "Floor" from {{ ref('pb_n0') }}
 union all 
 select * from {{ ref('pb_headcount') }}
 
@@ -13,7 +14,7 @@ final_result as (
     select
         *,
         case
-            when "Building Name" = 'NGHB' then right("Floor", 1)
+            when "Building Name" = 'NGHB' and Left("Floor", 1) in ('S', 'N', 'P') then coalesce(right("Floor", 1), 'Unassigned')
             else 'Unassigned'
         end "Floor#"
     from

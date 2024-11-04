@@ -1,7 +1,7 @@
 {% macro get_max_value(table_name, col_name, offset=0) %}
     {% set query %}
 
-        SELECT {{ col_name }}  AT TIME ZONE 'UTC' + INTERVAL '{{ offset }} hour'
+        SELECT {{ col_name }}  AT TIME ZONE 'UTC' + INTERVAL '{{ offset }} day'
         FROM {{ table_name }}
         ORDER BY {{ col_name }} DESC 
         LIMIT 1

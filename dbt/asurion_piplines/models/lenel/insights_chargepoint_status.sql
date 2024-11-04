@@ -1,4 +1,5 @@
-{{ config(materialized = 'incremental') }}
+{{ config(materialized = 'incremental', 
+tags = ['chargepoint']) }}
 
 {% if is_incremental() %}
   {% set max_time = get_max_value('insights_chargepoint_status', '"timestampCST"') %}
@@ -6,7 +7,8 @@
 
 WITH statuses AS (
     SELECT
-        *
+        distinct on (timestamp)
+        timestamp, payload
     FROM
         {{ source('raw_data_prod', 'audit') }}
     WHERE

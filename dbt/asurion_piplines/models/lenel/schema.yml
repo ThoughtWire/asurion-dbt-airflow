@@ -39,6 +39,14 @@ sources:
         description: table that holds historical information about Asurion teams and desk assignment at Asurion NGHB. 
         loaded_at_field: archdate
 
+      - name: insights_delivered
+        description: table that holds historical information about packages delivered to gulch hub. 
+        loaded_at_field: timestamp
+
+      - name: insights_pickedup
+        description: table that holds historical information about packages picked up in the gulch hub. 
+        loaded_at_field: timestamp
+
       - name: dti_zl
         description: lenel system devices 
 
@@ -132,6 +140,14 @@ models:
       materialized: incremental
       indexes:
         - columns: timestamp
-          type: 'btree' 
+          type: 'btree'
+
+  - name: pb_zones
+    description: table that holds zone configuratoin for various subsystems 
+    columns:
+      - name: zone_id
+        testS:
+          - unique 
+            
 
 

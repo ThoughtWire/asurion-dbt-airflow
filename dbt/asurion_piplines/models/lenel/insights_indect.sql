@@ -1,8 +1,14 @@
-{{ config(materialized = 'incremental') }} 
+{{ config(materialized = 'incremental', 
+    unique_key = ['timestamp', '"ZoneName"'],
+    incremental_strategy = 'delete+insert', 
+    indexes = [{'columns': ['timestamp'],
+    'type': 'btree' } ], tags = ['indect']
+)
+}} 
 
 
 {% if is_incremental() %} 
-{% set max_time = get_max_value('insights_parking', 'timestamp') %} 
+{% set max_time = get_max_value('insights_indect', 'timestamp') %} 
 {% endif %} 
 
 with parsed_payload as (
@@ -17,7 +23,7 @@ with parsed_payload as (
             
             {% if is_incremental() %}
 
-            and timestamp > {{ max_time }} 
+            and timestamp > {{ max_time }}::timestamp - interval '2 months' 
             
             {% endif %}
     ),
@@ -38,12 +44,19 @@ with parsed_payload as (
             dense_rank() over (order by timestamp :: DATE desc) as day_order,
             dense_rank() over (order by date_part('year', timestamp) desc, date_part('month', timestamp) desc) as month_order,
             dense_rank() over (order by date_part('year', timestamp) desc) as year_order,
+            
 
             (
                 jsonb_populate_recordset(null :: indect, zones :: jsonb)
             ).*
         from
             parsed_data
+    ),
+
+    duplicates_removed as (
+
+        select *, row_number() over (partition by "Name", timestamp order by timestamp desc) as rn_number
+        from final_data
     ),
 
     final_result as (
@@ -104,7 +117,8 @@ with parsed_payload as (
 
             CONCAT(trim(to_char(timestamp, 'Day')) , ', ', TO_CHAR(timestamp, 'FMHH12 AM')) as "Day&Hour"
             
-            from final_data
+            from duplicates_removed
+            where rn_number = 1
     )
 
 select

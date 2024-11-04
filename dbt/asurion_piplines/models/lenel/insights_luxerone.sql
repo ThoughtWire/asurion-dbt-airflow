@@ -1,5 +1,7 @@
 {{ config(
     materialized = 'incremental',
+    unique_key = ['timestamp', '"Available"', '"Occupied"', '"Reserved"'],
+    strategy = 'delete+insert',
     indexes = [{'columns': ['timestamp'],
     'type': 'btree' }], tags = ['luxerone']
 ) }} 
@@ -14,7 +16,7 @@
 
 WITH parsed_data AS (
 
-            select
+            select distinct 
             timestamp at time zone 'America/Chicago' as timestamp,
             (
                 jsonb_populate_recordset(null :: luxerone, payload :: jsonb)
@@ -23,11 +25,11 @@ WITH parsed_data AS (
             {{ source('raw_data_prod', 'audit') }}
 
         where
-            subsystem = 'lockerAudit' and timestamp > '2022-11-01'
+            subsystem = 'lockerAudit' 
             
             {% if is_incremental() %}
 
-                and timestamp > {{max_time}} 
+                and timestamp > {{max_time}}::timestamp - interval '2 months'
             
             {% endif %}
 

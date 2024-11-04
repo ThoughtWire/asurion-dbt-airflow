@@ -1,5 +1,7 @@
 {{ config(
     materialized = 'incremental',
+    unique_key = ['timestamp', 'id', 'cluster'],
+    incremental_strategy = 'delete+insert', 
     indexes = [{'columns': ['timestamp'],
     'type': 'btree' } ], tags = ['alerton']
 ) }} 
@@ -30,7 +32,7 @@ WITH filtered_metric AS (
             
         {% if is_incremental() %}
 
-           and timestamp > {{ max_time }}
+           and timestamp > {{ max_time }}::timestamp - interval '2 days'
 
         {% endif %}
 ), 
@@ -47,7 +49,7 @@ bucketing as (
 
 agg as (
 		select id, cluster, timestamp, 
-		avg(value) as avg, sum(value) as sum
+		avg(value) as avg, sum(value) as sum, max(value) as max, min(value) as min
 		from bucketing
 		group by id, cluster, timestamp
 
@@ -57,11 +59,11 @@ final_data as (
 
             select *, 
 
-            dense_rank() over (order by timestamp :: DATE desc) as day_order,
-            dense_rank() over (order by date_part('year', timestamp) desc, date_part('month', timestamp) desc) as month_order,
-            dense_rank() over (order by date_part('year', timestamp) desc) as year_order
+            dense_rank() over (order by timestamp :: DATE desc) as day_order
+            -- dense_rank() over (order by date_part('year', timestamp) desc, date_part('month', timestamp) desc) as month_order,
+            -- dense_rank() over (order by date_part('year', timestamp) desc) as year_order
            
-            from filtered_metric
+            from agg
 ),
 
 
@@ -70,6 +72,8 @@ final_result as (
         fd.id,
         fd.avg,
         fd.sum,
+        fd.min,
+        fd.max,
         cluster,
         split_part(cluster, '/', 3) as "Device type",
         timestamp,
@@ -81,10 +85,10 @@ final_result as (
         date_part('month', timestamp) :: int as "timestampMonth",
         date_part('hour', timestamp) :: int as "timestampHour",
 
-        CASE
-            WHEN day_order <= 30 THEN 'Last 30 Days'
-            Else 'NA' 
-        END AS "Last 30 Days", 
+        -- CASE
+        --     WHEN day_order <= 30 THEN 'Last 30 Days'
+        --     Else 'NA' 
+        -- END AS "Last 30 Days", 
 
         CASE
             WHEN day_order = 1 THEN 'Today'
@@ -92,16 +96,16 @@ final_result as (
         Else 'NA' 
         END AS "Today",
 
-        CASE
-            WHEN year_order = 1 THEN 'YTD'
-        Else 'NA' 
-        END AS "YearLabel",
+        -- CASE
+        --     WHEN year_order = 1 THEN 'YTD'
+        -- Else 'NA' 
+        -- END AS "YearLabel",
 
-        CASE
-            WHEN month_order = 1 THEN 'Current Month'
-            WHEN month_order = 2 THEN 'Previous Month'
-        Else 'NA' 
-        END AS "Month_label", 
+        -- CASE
+        --     WHEN month_order = 1 THEN 'Current Month'
+        --     WHEN month_order = 2 THEN 'Previous Month'
+        -- Else 'NA' 
+        -- END AS "Month_label", 
 
          CASE
                 WHEN date_part('hour', timestamp) >= 9 and date_part('hour', timestamp) <= 17 THEN 'Working Hours'
@@ -111,7 +115,8 @@ final_result as (
 
 
 
-        pz."Floor", pz."Floor#", pz."Building", pz."Room Type", pz."room" as "zone_name",
+        COALESCE(pz."Floor", 'Asurion') as "Floor", COALESCE(pz."Floor#", 'Asurion') as "Floor#", COALESCE(pz."Building", 'Asurion') as "Building", 
+        COALESCE(pz."Room Type", 'Asurion') as "Room Type", COALESCE(pz."room", 'Asurion') as "zone_name",
         'alerton' as vendorname
     from
         final_data fd

@@ -21,4 +21,16 @@ asurion_piplines:
       type: postgres
       user: phub@vcasurionsa5744-uat-3-psql
 
+
+    new_prod:
+      dbname: phub
+      host: 10.31.25.4
+      pass: 'g35kmcvDB9Et'
+      port: 5432
+      schema: public
+      threads: 10
+      type: postgres
+      user: phub
+
+    
   target: prod

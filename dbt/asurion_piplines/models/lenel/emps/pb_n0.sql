@@ -1,4 +1,4 @@
-{{ config(materialized = 'materialized_view', tags=['emps']) }} 
+{{ config(materialized = 'ephemeral', tags=['emps']) }} 
 
 
 with this_month as (
@@ -12,9 +12,18 @@ with this_month as (
          split_part("RMID",'  ',1) as bldgcode, 
          current_date as archdate, 
          to_char(current_date, 'YYYY-MM') as month_year,
-        trim(split_part("RMID", '    ', 2)) as "Room Name",
-        trim(split_part("RMID", '    ', 1)) as "Building Name",
-        split_part(trim(split_part("RMID", '    ', 2)), '.', 1) as "Floor"
+        CASE 
+          WHEN trim(split_part("RMID",'  ',1))='NGHB' THEN coalesce(trim(substring("RMID" from '[SNP]\d.*')), 'Unassigned')
+          ELSE  coalesce(trim(split_part("RMID", '    ', 2)), 'Unassigned')
+        END as "Room Name",
+
+        coalesce(trim(split_part("RMID", '    ', 1)), 'Unassigned') as "Building Name",
+
+        CASE 
+          WHEN trim(split_part("RMID",'  ',1))='NGHB' THEN coalesce(substring(trim(substring("RMID" from '[SNP]\d.*')) from '[SNP]\d{1}(?=(\.|-))'), 'Unassigned')
+          ELSE  split_part(trim(split_part("RMID", '    ', 2)), '.', 1)
+        END as "Floor"
+
     from
         {{ source('raw_data_prod', 'dti_n0') }}
 )
